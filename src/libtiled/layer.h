@@ -122,6 +122,8 @@ public:
      */
     void setX(int x) { mX = x; }
 
+    void setGuid(QString guid) { mGuid = guid; }
+
     /**
      * Returns the y position of this layer (in tiles).
      */
@@ -236,6 +238,7 @@ protected:
     int mHeight;
     float mOpacity;
     bool mVisible;
+    QString mGuid;
     Map *mMap;
 };
 

@@ -130,6 +130,8 @@ QList<TileLayer*> Map::tileLayers() const
 void Map::addLayer(Layer *layer)
 {
     adoptLayer(layer);
+    QUuid test = QUuid::createUuid();
+    layer->setGuid(test.toString());
     mLayers.append(layer);
 }
 

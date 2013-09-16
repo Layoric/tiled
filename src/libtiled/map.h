@@ -38,6 +38,7 @@
 #include <QList>
 #include <QMargins>
 #include <QSize>
+#include <QUuid>
 
 namespace Tiled {
 

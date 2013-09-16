@@ -248,6 +248,7 @@ QVariant MapToVariantConverter::toVariant(const ObjectGroup *objectGroup) const
         objectVariant["width"] = size.x();
         objectVariant["height"] = size.y();
         objectVariant["rotation"] = object->rotation();
+        objectVariant["guid"] = object->getGuid();
 
         objectVariant["visible"] = object->isVisible();
 

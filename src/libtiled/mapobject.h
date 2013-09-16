@@ -39,6 +39,7 @@
 #include <QSizeF>
 #include <QString>
 #include <QRectF>
+#include <QUuid>
 
 namespace Tiled {
 
@@ -214,6 +215,8 @@ public:
     void setObjectGroup(ObjectGroup *objectGroup)
     { mObjectGroup = objectGroup; }
 
+    QString getGuid() const { return mGuid; }
+
     /**
      * Sets the rotation of the object
      */
@@ -250,6 +253,7 @@ private:
     ObjectGroup *mObjectGroup;
     qreal mRotation;
     bool mVisible;
+    QString mGuid;
 };
 
 } // namespace Tiled
