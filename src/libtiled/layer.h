@@ -37,6 +37,7 @@
 #include <QSet>
 #include <QString>
 #include <QVector>
+#include <QUuid>
 
 namespace Tiled {
 
@@ -123,6 +124,8 @@ public:
     void setX(int x) { mX = x; }
 
     void setGuid(QString guid) { mGuid = guid; }
+
+    QString getGuid() const { return mGuid; }
 
     /**
      * Returns the y position of this layer (in tiles).

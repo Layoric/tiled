@@ -314,6 +314,7 @@ void MapToVariantConverter::addLayerAttributes(QVariantMap &layerVariant,
     layerVariant["y"] = layer->y();
     layerVariant["visible"] = layer->isVisible();
     layerVariant["opacity"] = layer->opacity();
+    layerVariant["guid"] = layer->getGuid();
 
     const Properties &properties = layer->properties();
     if (!properties.isEmpty())

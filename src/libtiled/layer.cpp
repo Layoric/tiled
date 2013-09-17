@@ -47,6 +47,7 @@ Layer::Layer(TypeFlag type, const QString &name, int x, int y,
     mHeight(height),
     mOpacity(1.0f),
     mVisible(true),
+    mGuid(QUuid::createUuid().toString()),
     mMap(0)
 {
 }
@@ -73,6 +74,7 @@ Layer *Layer::initializeClone(Layer *clone) const
     clone->mOpacity = mOpacity;
     clone->mVisible = mVisible;
     clone->setProperties(properties());
+    clone->setGuid(mGuid);
     return clone;
 }
 

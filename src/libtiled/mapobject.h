@@ -217,6 +217,8 @@ public:
 
     QString getGuid() const { return mGuid; }
 
+    void setGuid(QString guid) { mGuid = guid; }
+
     /**
      * Sets the rotation of the object
      */

@@ -228,9 +228,11 @@ TileLayer *VariantToMapConverter::toTileLayer(const QVariantMap &variantMap)
 
     const qreal opacity = variantMap["opacity"].toReal();
     const bool visible = variantMap["visible"].toBool();
+    const QString guid = variantMap["guid"].toString();
 
     tileLayer->setOpacity(opacity);
     tileLayer->setVisible(visible);
+    tileLayer->setGuid(guid);
 
     int x = 0;
     int y = 0;
@@ -296,9 +298,11 @@ ObjectGroup *VariantToMapConverter::toObjectGroup(const QVariantMap &variantMap)
 
     const qreal opacity = variantMap["opacity"].toReal();
     const bool visible = variantMap["visible"].toBool();
+    const QString guid = variantMap["guid"].toString();
 
     objectGroup->setOpacity(opacity);
     objectGroup->setVisible(visible);
+    objectGroup->setGuid(guid);
 
     objectGroup->setColor(variantMap.value("color").value<QColor>());
 
@@ -324,6 +328,7 @@ ObjectGroup *VariantToMapConverter::toObjectGroup(const QVariantMap &variantMap)
         const int width = objectVariantMap["width"].toInt();
         const int height = objectVariantMap["height"].toInt();
         const qreal rotation = objectVariantMap["rotation"].toReal();
+        const QString guid = objectVariantMap["guid"].toString();
 
         const QPointF pos = toTile(x, y);
         const QPointF size = toTile(width, height);
@@ -332,6 +337,7 @@ ObjectGroup *VariantToMapConverter::toObjectGroup(const QVariantMap &variantMap)
                                           pos,
                                           QSizeF(size.x(), size.y()));
         object->setRotation(rotation);
+        object->setGuid(guid);
 
         if (gid) {
             bool ok;

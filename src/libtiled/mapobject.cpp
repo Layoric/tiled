@@ -37,9 +37,9 @@ MapObject::MapObject():
     mShape(Rectangle),
     mObjectGroup(0),
     mRotation(0.0f),
-    mVisible(true)
+    mVisible(true),
+    mGuid(QUuid::createUuid().toString())
 {
-    mGuid = QUuid::createUuid().toString();
 }
 
 MapObject::MapObject(const QString &name, const QString &type,
@@ -53,9 +53,9 @@ MapObject::MapObject(const QString &name, const QString &type,
     mShape(Rectangle),
     mObjectGroup(0),
     mRotation(0.0f),
-    mVisible(true)
+    mVisible(true),
+    mGuid(QUuid::createUuid().toString())
 {
-    mGuid = QUuid::createUuid().toString();
 }
 
 void MapObject::flip(FlipDirection direction)
@@ -88,5 +88,6 @@ MapObject *MapObject::clone() const
     o->setShape(mShape);
     o->setCell(mCell);
     o->setRotation(mRotation);
+    o->setGuid(mGuid);
     return o;
 }
