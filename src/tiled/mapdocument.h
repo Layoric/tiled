@@ -30,6 +30,7 @@
 #include <QObject>
 #include <QRegion>
 #include <QString>
+#include <QUuid>
 
 class QModelIndex;
 class QPoint;

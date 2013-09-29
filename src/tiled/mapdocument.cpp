@@ -380,7 +380,7 @@ void MapDocument::duplicateLayer()
 
     Layer *duplicate = mMap->layerAt(mCurrentLayerIndex)->clone();
     duplicate->setName(tr("Copy of %1").arg(duplicate->name()));
-
+    duplicate->setGuid(QUuid::createUuid().toString());
     const int index = mCurrentLayerIndex + 1;
     QUndoCommand *cmd = new AddLayer(this, index, duplicate);
     cmd->setText(tr("Duplicate Layer"));
@@ -751,6 +751,7 @@ void MapDocument::duplicateObjects(const QList<MapObject *> &objects)
     QList<MapObject*> clones;
     foreach (const MapObject *mapObject, objects) {
         MapObject *clone = mapObject->clone();
+        clone->setGuid(QUuid::createUuid().toString());
         clones.append(clone);
         mUndoStack->push(new AddMapObject(this,
                                           mapObject->objectGroup(),
