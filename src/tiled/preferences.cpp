@@ -260,6 +260,23 @@ void Preferences::setReloadTilesetsOnChanged(bool value)
     tilesetManager->setReloadTilesetsOnChange(mReloadTilesetsOnChange);
 }
 
+bool Preferences::includeGUIDs() const
+{
+    return mIncludeGUIDs;
+}
+
+void Preferences::setIncludeGUIDs(bool value)
+{
+    if(mIncludeGUIDs == value)
+    {
+        return;
+    }
+
+    mIncludeGUIDs = value;
+    mSettings->setValue(QLatin1String("Storage/IncludeUUIs"),
+                            mIncludeGUIDs);
+}
+
 void Preferences::setUseOpenGL(bool useOpenGL)
 {
     if (mUseOpenGL == useOpenGL)

@@ -435,6 +435,7 @@ void MapWriterPrivate::writeLayerAttributes(QXmlStreamWriter &w,
                      QString::number(layer->height()));
     const int x = layer->x();
     const int y = layer->y();
+    const QString guid = layer->getGuid();
     const qreal opacity = layer->opacity();
     if (x != 0)
         w.writeAttribute(QLatin1String("x"), QString::number(x));
@@ -444,6 +445,7 @@ void MapWriterPrivate::writeLayerAttributes(QXmlStreamWriter &w,
         w.writeAttribute(QLatin1String("visible"), QLatin1String("0"));
     if (opacity != qreal(1))
         w.writeAttribute(QLatin1String("opacity"), QString::number(opacity));
+    w.writeAttribute(QLatin1String("guid"),guid);
 }
 
 void MapWriterPrivate::writeObjectGroup(QXmlStreamWriter &w,
@@ -516,9 +518,11 @@ void MapWriterPrivate::writeObject(QXmlStreamWriter &w,
 
     QPoint pos = toPixel(mapObject->x(), mapObject->y());
     QPoint size = toPixel(mapObject->width(), mapObject->height());
+    QString guid = mapObject->getGuid();
 
     w.writeAttribute(QLatin1String("x"), QString::number(pos.x()));
     w.writeAttribute(QLatin1String("y"), QString::number(pos.y()));
+    w.writeAttribute(QLatin1String("guid"),guid);
 
     if (size.x() != 0)
         w.writeAttribute(QLatin1String("width"), QString::number(size.x()));

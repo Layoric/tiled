@@ -67,6 +67,9 @@ public:
     bool reloadTilesetsOnChange() const;
     void setReloadTilesetsOnChanged(bool value);
 
+    bool includeGUIDs() const;
+    void setIncludeGUIDs(bool value);
+
     bool useOpenGL() const { return mUseOpenGL; }
     void setUseOpenGL(bool useOpenGL);
 
@@ -148,6 +151,7 @@ private:
     bool mDtdEnabled;
     QString mLanguage;
     bool mReloadTilesetsOnChange;
+    bool mIncludeGUIDs;
     bool mUseOpenGL;
     ObjectTypes mObjectTypes;
 
