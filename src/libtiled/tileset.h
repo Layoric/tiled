@@ -38,6 +38,7 @@
 #include <QPoint>
 #include <QString>
 #include <QPixmap>
+#include <QUuid>
 
 class QImage;
 
@@ -77,7 +78,8 @@ public:
         mImageWidth(0),
         mImageHeight(0),
         mColumnCount(0),
-        mTerrainDistancesDirty(false)
+        mTerrainDistancesDirty(false),
+        mGuid(QUuid::createUuid().toString())
     {
         Q_ASSERT(tileSpacing >= 0);
         Q_ASSERT(margin >= 0);
@@ -296,6 +298,9 @@ public:
      */
     void markTerrainDistancesDirty() { mTerrainDistancesDirty = true; }
 
+    QString getGuid() const { return mGuid; }
+    void setGuid(QString guid) { mGuid = guid; }
+
 private:
     /**
      * Sets tile size to the maximum size.
@@ -322,6 +327,7 @@ private:
     QList<Tile*> mTiles;
     QList<Terrain*> mTerrainTypes;
     bool mTerrainDistancesDirty;
+    QString mGuid;
 };
 
 } // namespace Tiled

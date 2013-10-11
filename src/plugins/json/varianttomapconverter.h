@@ -27,6 +27,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QVariant>
+#include <QUuid>
 
 namespace Tiled {
 class Layer;

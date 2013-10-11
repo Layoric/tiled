@@ -116,6 +116,8 @@ Tileset *VariantToMapConverter::toTileset(const QVariant &variant)
     const QVariantMap tileOffset = variantMap["tileoffset"].toMap();
     const int tileOffsetX = tileOffset["x"].toInt();
     const int tileOffsetY = tileOffset["y"].toInt();
+    const QString guid = variantMap["guid"].toString();
+
 
     if (tileWidth <= 0 || tileHeight <= 0 || firstGid == 0) {
         mError = tr("Invalid tileset parameters for tileset '%1'").arg(name);
@@ -126,6 +128,15 @@ Tileset *VariantToMapConverter::toTileset(const QVariant &variant)
     TilesetPtr tileset(new Tileset(name,
                                    tileWidth, tileHeight,
                                    spacing, margin));
+    if(guid.length() > 0)
+    {
+      tileset->setGuid(guid);
+    }
+    else
+    {
+        tileset->setGuid(QUuid::createUuid().toString());
+    }
+
 
     tileset->setTileOffset(QPoint(tileOffsetX, tileOffsetY));
 
