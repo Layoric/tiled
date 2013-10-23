@@ -348,7 +348,12 @@ ObjectGroup *VariantToMapConverter::toObjectGroup(const QVariantMap &variantMap)
                                           pos,
                                           QSizeF(size.x(), size.y()));
         object->setRotation(rotation);
-        object->setGuid(guid);
+        if(guid.length() > 0) {
+            object->setGuid(guid);
+        } else {
+            object->setGuid(QUuid::createUuid().toString());
+        }
+
 
         if (gid) {
             bool ok;
