@@ -53,6 +53,7 @@ SOURCES += aboutdialog.cpp \
     automappingutils.cpp  \
     brushitem.cpp \
     bucketfilltool.cpp \
+    changeimagelayerposition.cpp \
     changeimagelayerproperties.cpp \
     changelayer.cpp \
     changemapobject.cpp \
@@ -61,6 +62,8 @@ SOURCES += aboutdialog.cpp \
     changeobjectgroupproperties.cpp \
     changepolygon.cpp \
     changeproperties.cpp \
+    changetileanimation.cpp \
+    changetileobjectgroup.cpp \
     changetileselection.cpp \
     changetileterrain.cpp \
     clipboardmanager.cpp \
@@ -122,9 +125,9 @@ SOURCES += aboutdialog.cpp \
     renameterrain.cpp \
     resizedialog.cpp \
     resizehelper.cpp \
-    resizelayer.cpp \
     resizemap.cpp \
     resizemapobject.cpp \
+    resizetilelayer.cpp \
     rotatemapobject.cpp \
     saveasimagedialog.cpp \
     selectionrectangle.cpp \
@@ -133,6 +136,9 @@ SOURCES += aboutdialog.cpp \
     terraindock.cpp \
     terrainmodel.cpp \
     terrainview.cpp \
+    tileanimationdriver.cpp \
+    tileanimationeditor.cpp \
+    tilecollisioneditor.cpp \
     tiledapplication.cpp \
     tilelayeritem.cpp \
     tilepainter.cpp \
@@ -167,7 +173,8 @@ HEADERS += aboutdialog.h \
     automappingutils.h \
     brushitem.h \
     bucketfilltool.h \
-    changeimagelayerproperties.h\
+    changeimagelayerposition.h \
+    changeimagelayerproperties.h \
     changelayer.h \
     changemapobject.h \
     changemapobjectsorder.h \
@@ -175,6 +182,8 @@ HEADERS += aboutdialog.h \
     changeobjectgroupproperties.h \
     changepolygon.h \
     changeproperties.h \
+    changetileanimation.h \
+    changetileobjectgroup.h \
     changetileselection.h \
     changetileterrain.h \
     clipboardmanager.h \
@@ -237,9 +246,9 @@ HEADERS += aboutdialog.h \
     renameterrain.h \
     resizedialog.h \
     resizehelper.h \
-    resizelayer.h \
     resizemap.h \
     resizemapobject.h \
+    resizetilelayer.h \
     rotatemapobject.h \
     saveasimagedialog.h \
     selectionrectangle.h \
@@ -248,6 +257,9 @@ HEADERS += aboutdialog.h \
     terraindock.h \
     terrainmodel.h \
     terrainview.h \
+    tileanimationdriver.h \
+    tileanimationeditor.h \
+    tilecollisioneditor.h \
     tiledapplication.h \
     tilelayeritem.h \
     tilepainter.h \
@@ -274,14 +286,15 @@ macx {
 
 FORMS += aboutdialog.ui \
     commanddialog.ui \
+    editterraindialog.ui \
     mainwindow.ui \
     newmapdialog.ui \
     newtilesetdialog.ui \
     offsetmapdialog.ui \
     preferencesdialog.ui \
     resizedialog.ui \
-    saveasimagedialog.ui\
-    editterraindialog.ui
+    saveasimagedialog.ui \
+    tileanimationeditor.ui
 
 icon32.path = $${PREFIX}/share/icons/hicolor/32x32/apps/
 icon32.files += images/32x32/tiled.png

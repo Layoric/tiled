@@ -42,6 +42,7 @@
 #include <QPinchGesture>
 #include <QUndoCommand>
 #include <QWheelEvent>
+#include <QtCore/qmath.h>
 
 using namespace Tiled;
 using namespace Tiled::Internal;
@@ -232,6 +233,33 @@ void TileDelegate::paint(QPainter *painter,
 
     painter->drawPixmap(targetRect, tileImage);
 
+    // Overlay with film strip when animated
+    if (mTilesetView->markAnimatedTiles() && tile->isAnimated()) {
+        QRectF strip(targetRect);
+        strip.setHeight(targetRect.height() / 5);
+        painter->fillRect(strip, Qt::black);
+        strip.moveBottom(targetRect.bottom() + 1);
+        painter->fillRect(strip, Qt::black);
+
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setBrush(Qt::white);
+        painter->setPen(Qt::NoPen);
+
+        qreal step = qMax(strip.height(), qreal(3));
+        step = qMax(strip.width() / qFloor(strip.width() / step), qreal(3));
+        QRectF hole(0, 0, strip.height() * 0.6, strip.height() * 0.6);
+        qreal margin = (strip.height() - hole.height()) / 2;
+
+        for (qreal x = strip.x() + (step - hole.width()) / 2;
+             x < strip.right();
+             x += step) {
+            hole.moveTo(x, targetRect.top() + margin);
+            painter->drawRoundedRect(hole, 25, 25, Qt::RelativeSize);
+            hole.moveTo(x, strip.top() + margin);
+            painter->drawRoundedRect(hole, 25, 25, Qt::RelativeSize);
+        }
+    }
+
     // Overlay with highlight color when selected
     if (option.state & QStyle::State_Selected) {
         const qreal opacity = painter->opacity();
@@ -275,12 +303,15 @@ QSize TileDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
                              const QModelIndex &index) const
 {
     const TilesetModel *m = static_cast<const TilesetModel*>(index.model());
-    const Tileset *tileset = m->tileset();
-    const QSize tileSize = tileset->tileSize() * mTilesetView->scale();
     const int extra = mTilesetView->drawGrid() ? 1 : 0;
 
-    return QSize(tileSize.width() + extra,
-                 tileSize.height() + extra);
+    if (const Tile *tile = m->tileAt(index)) {
+        const QSize tileSize = tile->size() * mTilesetView->scale();
+        return QSize(tileSize.width() + extra,
+                     tileSize.height() + extra);
+    }
+
+    return QSize(extra, extra);
 }
 
 } // anonymous namespace
@@ -344,6 +375,10 @@ int TilesetView::sizeHintForColumn(int column) const
     const TilesetModel *model = tilesetModel();
     if (!model)
         return -1;
+#if QT_VERSION >= 0x050200
+    if (model->tileset()->imageSource().isEmpty())
+        return QTableView::sizeHintForColumn(column);
+#endif
 
     const int tileWidth = model->tileset()->tileWidth();
     return qRound(tileWidth * scale()) + (mDrawGrid ? 1 : 0);
@@ -355,6 +390,10 @@ int TilesetView::sizeHintForRow(int row) const
     const TilesetModel *model = tilesetModel();
     if (!model)
         return -1;
+#if QT_VERSION >= 0x050200
+    if (model->tileset()->imageSource().isEmpty())
+        return QTableView::sizeHintForRow(row);
+#endif
 
     const int tileHeight = model->tileset()->tileHeight();
     return qRound(tileHeight * scale()) + (mDrawGrid ? 1 : 0);
@@ -375,6 +414,15 @@ void TilesetView::setZoomable(Zoomable *zoomable)
 qreal TilesetView::scale() const
 {
     return mZoomable ? mZoomable->scale() : 1;
+}
+
+void TilesetView::setMarkAnimatedTiles(bool enabled)
+{
+    if (mMarkAnimatedTiles == enabled)
+        return;
+
+    mMarkAnimatedTiles = enabled;
+    viewport()->update();
 }
 
 bool TilesetView::event(QEvent *event)

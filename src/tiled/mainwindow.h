@@ -47,8 +47,8 @@ class MapReaderInterface;
 
 namespace Internal {
 
+class AutomappingManager;
 class BucketFillTool;
-class ClipboardManager;
 class CommandButton;
 class DocumentManager;
 class LayerDock;
@@ -59,10 +59,14 @@ class MapView;
 class MiniMapDock;
 class ObjectsDock;
 class PropertiesDock;
+class QuickStampManager;
 class StampBrush;
 class TerrainBrush;
 class TerrainDock;
+class TileAnimationEditor;
+class TileCollisionEditor;
 class TilesetDock;
+class ToolManager;
 class Zoomable;
 
 /**
@@ -138,7 +142,6 @@ public slots:
     void resizeMap();
     void offsetMap();
     void editMapProperties();
-    void autoMap();
 
     void updateWindowTitle();
     void updateActions();
@@ -157,6 +160,7 @@ public slots:
 
     void setStampBrush(const TileLayer *tiles);
     void setTerrainBrush(const Terrain *terrain);
+    void saveQuickStamp(int index);
     void updateStatusInfoLabel(const QString &statusInfo);
 
     void mapDocumentChanged(MapDocument *mapDocument);
@@ -164,6 +168,9 @@ public slots:
 
     void autoMappingError();
     void autoMappingWarning();
+
+    void onAnimationEditorClosed();
+    void onCollisionEditorClosed();
 
 private:
     /**
@@ -200,14 +207,7 @@ private:
     QStringList recentFiles() const;
     QString fileDialogStartLocation() const;
 
-    /**
-     * Add the given file to the recent files list.
-     */
     void setRecentFile(const QString &fileName);
-
-    /**
-     * Update the recent files menu.
-     */
     void updateRecentFiles();
 
     void retranslateUi();
@@ -222,6 +222,8 @@ private:
     TerrainDock *mTerrainDock;
     MiniMapDock* mMiniMapDock;
     ConsoleDock *mConsoleDock;
+    TileAnimationEditor *mTileAnimationEditor;
+    TileCollisionEditor *mTileCollisionEditor;
     QLabel *mCurrentLayerLabel;
     Zoomable *mZoomable;
     QComboBox *mZoomComboBox;
@@ -234,16 +236,20 @@ private:
     BucketFillTool *mBucketFillTool;
     TerrainBrush *mTerrainBrush;
 
-    ClipboardManager *mClipboardManager;
-
     enum { MaxRecentFiles = 8 };
     QAction *mRecentFiles[MaxRecentFiles];
 
     QMenu *mLayerMenu;
+    QAction *mViewsAndToolbarsMenu;
+    QAction *mShowTileAnimationEditor;
+    QAction *mShowTileCollisionEditor;
 
     void setupQuickStamps();
 
+    AutomappingManager *mAutomappingManager;
     DocumentManager *mDocumentManager;
+    QuickStampManager *mQuickStampManager;
+    ToolManager *mToolManager;
 };
 
 } // namespace Internal

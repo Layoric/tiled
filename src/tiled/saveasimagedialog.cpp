@@ -146,7 +146,7 @@ void SaveAsImageDialog::accept()
     if (useCurrentScale)
         mapSize *= mCurrentScale;
 
-    QImage image(mapSize, QImage::Format_ARGB32);
+    QImage image(mapSize, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
 
@@ -155,7 +155,9 @@ void SaveAsImageDialog::accept()
                                QPainter::HighQualityAntialiasing);
         painter.setTransform(QTransform::fromScale(mCurrentScale,
                                                    mCurrentScale));
-    }
+        renderer->setPainterScale(mCurrentScale);
+    } else
+        renderer->setPainterScale(1);
 
     foreach (const Layer *layer, mMapDocument->map()->layers()) {
         if (visibleLayersOnly && !layer->isVisible())

@@ -163,6 +163,8 @@ public:
      */
     QSize size() const { return QSize(mWidth, mHeight); }
 
+    void setSize(const QSize &size);
+
     /**
      * Returns the bounds of this layer.
      */
@@ -186,18 +188,6 @@ public:
      */
     virtual void replaceReferencesToTileset(Tileset *oldTileset,
                                             Tileset *newTileset) = 0;
-
-    /**
-     * Resizes this layer to \a size, while shifting its contents by \a offset.
-     * Note that the position of the layer remains unaffected.
-     */
-    virtual void resize(const QSize &size, const QPoint &offset);
-
-    /**
-     * Offsets the layer by the given amount, and optionally wraps it around.
-     */
-    virtual void offset(const QPoint &offset, const QRect &bounds,
-                        bool wrapX, bool wrapY) = 0;
 
     /**
      * Returns whether this layer can merge together with the \a other layer.
@@ -244,6 +234,16 @@ protected:
     QString mGuid;
     Map *mMap;
 };
+
+
+/**
+ * Sets the size of this layer.
+ */
+inline void Layer::setSize(const QSize &size)
+{
+    mWidth = size.width();
+    mHeight = size.height();
+}
 
 } // namespace Tiled
 

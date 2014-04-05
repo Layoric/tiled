@@ -27,11 +27,13 @@
 #include "mapobjectmodel.h"
 #include "maprenderer.h"
 #include "mapscene.h"
+#include "mapview.h"
 #include "objectgroup.h"
 #include "objectgroupitem.h"
 #include "preferences.h"
 #include "resizemapobject.h"
 #include "tile.h"
+#include "zoomable.h"
 
 #include <QApplication>
 #include <QGraphicsSceneMouseEvent>
@@ -154,10 +156,11 @@ QVariant ResizeHandle::itemChange(GraphicsItemChange change,
             const QPointF itemPos = mMapObjectItem->pos();
             QPointF pixelPos = value.toPointF() + itemPos;
 
-            // Calculate the new coordinates in tiles
-            QPointF tileCoords = renderer->pixelToTileCoords(pixelPos);
+            // Calculate the new coordinates in pixels
+            QPointF tileCoords = renderer->screenToTileCoords(pixelPos);
             const QPointF objectPos = mMapObjectItem->mapObject()->position();
-            tileCoords -= objectPos;
+            const QPointF objectTilePos = renderer->pixelToTileCoords(objectPos);
+            tileCoords -= objectTilePos;
             tileCoords.setX(qMax(tileCoords.x(), qreal(0)));
             tileCoords.setY(qMax(tileCoords.y(), qreal(0)));
             if (snapToFineGrid) {
@@ -166,14 +169,14 @@ QVariant ResizeHandle::itemChange(GraphicsItemChange change,
                 tileCoords /= gridFine;
             } else if (snapToGrid)
                 tileCoords = tileCoords.toPoint();
-            tileCoords += objectPos;
+            tileCoords += objectTilePos;
 
-            return renderer->tileToPixelCoords(tileCoords) - itemPos;
+            return renderer->tileToScreenCoords(tileCoords) - itemPos;
         }
         else if (change == ItemPositionHasChanged) {
             // Update the size of the map object
             const QPointF newPos = value.toPointF() + mMapObjectItem->pos();
-            QPointF tileCoords = renderer->pixelToTileCoords(newPos);
+            QPointF tileCoords = renderer->screenToPixelCoords(newPos);
             tileCoords -= mMapObjectItem->mapObject()->position();
             mMapObjectItem->resizeObject(QSizeF(tileCoords.x(), tileCoords.y()));
         }
@@ -219,7 +222,7 @@ void MapObjectItem::syncWithMapObject()
     setToolTip(toolTip);
 
     MapRenderer *renderer = mMapDocument->renderer();
-    const QPointF pixelPos = renderer->tileToPixelCoords(mObject->position());
+    const QPointF pixelPos = renderer->pixelToScreenCoords(mObject->position());
     QRectF bounds = renderer->boundingRect(mObject);
 
     bounds.translate(-pixelPos);
@@ -238,7 +241,7 @@ void MapObjectItem::syncWithMapObject()
         prepareGeometryChange();
         mBoundingRect = bounds;
         const QPointF bottomRight = mObject->bounds().bottomRight();
-        const QPointF handlePos = renderer->tileToPixelCoords(bottomRight);
+        const QPointF handlePos = renderer->pixelToScreenCoords(bottomRight);
         mResizeHandle->setPos(handlePos - pixelPos);
     }
 
@@ -279,9 +282,11 @@ QPainterPath MapObjectItem::shape() const
 
 void MapObjectItem::paint(QPainter *painter,
                           const QStyleOptionGraphicsItem *,
-                          QWidget *)
+                          QWidget *widget)
 {
+    qreal scale = static_cast<MapView*>(widget->parent())->zoomable()->scale();
     painter->translate(-pos());
+    mMapDocument->renderer()->setPainterScale(scale);
     mMapDocument->renderer()->drawMapObject(painter, mObject, mColor);
 
     if (mIsEditable) {
@@ -293,7 +298,7 @@ void MapObjectItem::paint(QPainter *painter,
         QLineF bottom(mBoundingRect.bottomLeft(), mBoundingRect.bottomRight());
 
         QPen dashPen(Qt::DashLine);
-        dashPen.setWidth(0);
+        dashPen.setCosmetic(true);
         dashPen.setDashOffset(qMax(qreal(0), x()));
         painter->setPen(dashPen);
         painter->drawLines(QVector<QLineF>() << top << bottom);

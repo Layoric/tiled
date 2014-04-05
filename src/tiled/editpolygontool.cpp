@@ -185,7 +185,8 @@ void EditPolygonTool::mouseMoved(const QPointF &pos,
     AbstractObjectTool::mouseMoved(pos, modifiers);
 
     if (mMode == NoMode && mMousePressed) {
-        const int dragDistance = (mStart - pos).manhattanLength();
+        QPoint screenPos = QCursor::pos();
+        const int dragDistance = (mScreenStart - screenPos).manhattanLength();
         if (dragDistance >= QApplication::startDragDistance()) {
             if (mClickedHandle)
                 startMoving();
@@ -225,6 +226,7 @@ void EditPolygonTool::mousePressed(QGraphicsSceneMouseEvent *event)
     case Qt::LeftButton: {
         mMousePressed = true;
         mStart = event->scenePos();
+        mScreenStart = event->screenPos();
 
         const QList<QGraphicsItem *> items = mapScene()->items(mStart);
         mClickedObjectItem = first<MapObjectItem>(items);
@@ -382,7 +384,7 @@ void EditPolygonTool::updateHandles()
         // Update the position of all handles
         for (int i = 0; i < pointHandles.size(); ++i) {
             const QPointF &point = polygon.at(i);
-            const QPointF handlePos = renderer->tileToPixelCoords(point);
+            const QPointF handlePos = renderer->pixelToScreenCoords(point);
             const QPointF internalHandlePos = handlePos - item->pos();
             pointHandles.at(i)->setPos(item->mapToScene(internalHandlePos));
         }
@@ -470,10 +472,10 @@ void EditPolygonTool::startMoving()
     // Remember the current object positions
     mOldHandlePositions.clear();
     mOldPolygons.clear();
-    mAlignPosition = renderer->pixelToTileCoords((*mSelectedHandles.begin())->pos());
+    mAlignPosition = renderer->screenToPixelCoords((*mSelectedHandles.begin())->pos());
 
     foreach (PointHandle *handle, mSelectedHandles) {
-        const QPointF pos = renderer->pixelToTileCoords(handle->pos());
+        const QPointF pos = renderer->screenToPixelCoords(handle->pos());
         mOldHandlePositions.append(handle->pos());
         if (pos.x() < mAlignPosition.x())
             mAlignPosition.setX(pos.x());
@@ -501,15 +503,15 @@ void EditPolygonTool::updateMovingItems(const QPointF &pos,
 
     if (snapToGrid || snapToFineGrid) {
         int scale = snapToFineGrid ? Preferences::instance()->gridFine() : 1;
-        const QPointF alignPixelPos =
-                renderer->tileToPixelCoords(mAlignPosition);
-        const QPointF newAlignPixelPos = alignPixelPos + diff;
+        const QPointF alignScreenPos =
+                renderer->pixelToScreenCoords(mAlignPosition);
+        const QPointF newAlignPixelPos = alignScreenPos + diff;
 
         // Snap the position to the grid
         QPointF newTileCoords =
-                (renderer->pixelToTileCoords(newAlignPixelPos) * scale).toPoint();
+                (renderer->screenToTileCoords(newAlignPixelPos) * scale).toPoint();
         newTileCoords /= scale;
-        diff = renderer->tileToPixelCoords(newTileCoords) - alignPixelPos;
+        diff = renderer->tileToScreenCoords(newTileCoords) - alignScreenPos;
     }
 
     int i = 0;
@@ -519,7 +521,7 @@ void EditPolygonTool::updateMovingItems(const QPointF &pos,
         const QPointF newInternalPos = item->mapFromScene(newPixelPos);
         const QPointF newScenePos = item->pos() + newInternalPos;
         handle->setPos(newPixelPos);
-        handle->setPointPosition(renderer->pixelToTileCoords(newScenePos));
+        handle->setPointPosition(renderer->screenToPixelCoords(newScenePos));
         ++i;
     }
 }

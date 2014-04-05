@@ -299,7 +299,8 @@ void ObjectSelectionTool::mouseMoved(const QPointF &pos,
     AbstractObjectTool::mouseMoved(pos, modifiers);
 
     if (mMode == NoMode && mMousePressed) {
-        const int dragDistance = (mStart - pos).manhattanLength();
+        QPoint screenPos = QCursor::pos();
+        const int dragDistance = (mScreenStart - screenPos).manhattanLength();
         if (dragDistance >= QApplication::startDragDistance()) {
             // Holding shift makes sure we'll start a selection operation
             if (mClickedObjectItem && !(modifiers & Qt::ShiftModifier))
@@ -342,6 +343,7 @@ void ObjectSelectionTool::mousePressed(QGraphicsSceneMouseEvent *event)
     case Qt::LeftButton: {
         mMousePressed = true;
         mStart = event->scenePos();
+        mScreenStart = event->screenPos();
 
         CornerHandle *clickedHandle = 0;
 
@@ -555,21 +557,21 @@ void ObjectSelectionTool::updateMovingItems(const QPointF &pos,
 
     if (snapToGrid || snapToFineGrid) {
         int scale = snapToFineGrid ? Preferences::instance()->gridFine() : 1;
-        const QPointF alignPixelPos =
-                renderer->tileToPixelCoords(mAlignPosition);
-        const QPointF newAlignPixelPos = alignPixelPos + diff;
+        const QPointF alignScreenPos =
+                renderer->pixelToScreenCoords(mAlignPosition);
+        const QPointF newAlignPixelPos = alignScreenPos + diff;
 
         // Snap the position to the grid
         QPointF newTileCoords =
-                (renderer->pixelToTileCoords(newAlignPixelPos) * scale).toPoint();
+                (renderer->screenToTileCoords(newAlignPixelPos) * scale).toPoint();
         newTileCoords /= scale;
-        diff = renderer->tileToPixelCoords(newTileCoords) - alignPixelPos;
+        diff = renderer->tileToScreenCoords(newTileCoords) - alignScreenPos;
     }
 
     int i = 0;
     foreach (MapObjectItem *objectItem, mMovingItems) {
         const QPointF newPixelPos = mOldObjectItemPositions.at(i) + diff;
-        const QPointF newPos = renderer->pixelToTileCoords(newPixelPos);
+        const QPointF newPos = renderer->screenToPixelCoords(newPixelPos);
         objectItem->setPos(newPixelPos);
         objectItem->mapObject()->setPosition(newPos);
 
@@ -650,7 +652,7 @@ void ObjectSelectionTool::updateRotatingItems(const QPointF &pos,
         const QPointF newRelPos(oldRelPos.x() * cs - oldRelPos.y() * sn,
                                 oldRelPos.x() * sn + oldRelPos.y() * cs);
         const QPointF newPixelPos = mRotationOrigin + newRelPos;
-        const QPointF newPos = renderer->pixelToTileCoords(newPixelPos);
+        const QPointF newPos = renderer->screenToPixelCoords(newPixelPos);
 
         const qreal newRotation = mOldObjectRotations.at(i) + angleDiff * 180 / M_PI;
 

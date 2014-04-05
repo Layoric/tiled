@@ -119,7 +119,8 @@ QVariant MapToVariantConverter::toVariant(const Tileset *tileset,
         tilesetVariant["imageheight"] = tileset->imageHeight();
     }
 
-    // Write the properties & terrain for those tiles that have them
+    // Write the properties, terrain, external image, object group and
+    // animation for those tiles that have them.
     QVariantMap tilePropertiesVariant;
     QVariantMap tilesVariant;
     for (int i = 0; i < tileset->tileCount(); ++i) {
@@ -136,6 +137,23 @@ QVariant MapToVariantConverter::toVariant(const Tileset *tileset,
         }
         if (tile->terrainProbability() != -1.f)
             tileVariant["probability"] = tile->terrainProbability();
+        if (!tile->imageSource().isEmpty()) {
+            const QString rel = mMapDir.relativeFilePath(tile->imageSource());
+            tileVariant["image"] = rel;
+        }
+        if (tile->objectGroup())
+            tileVariant["objectgroup"] = toVariant(tile->objectGroup());
+        if (tile->isAnimated()) {
+            QVariantList frameVariants;
+            foreach (const Frame &frame, tile->frames()) {
+                QVariantMap frameVariant;
+                frameVariant["tileid"] = frame.tileId;
+                frameVariant["duration"] = frame.duration;
+                frameVariants.append(frameVariant);
+            }
+            tileVariant["animation"] = frameVariants;
+        }
+
         if (!tileVariant.empty())
             tilesVariant[QString::number(i)] = tileVariant;
     }
@@ -191,34 +209,6 @@ QVariant MapToVariantConverter::toVariant(const TileLayer *tileLayer) const
     return tileLayerVariant;
 }
 
-// TODO: Unduplicate this class since it's used also in mapwriter.cpp
-class TileToPixelCoordinates
-{
-public:
-    TileToPixelCoordinates(Map *map)
-    {
-        if (map->orientation() == Map::Isometric) {
-            // Isometric needs special handling, since the pixel values are
-            // based solely on the tile height.
-            mMultiplierX = map->tileHeight();
-            mMultiplierY = map->tileHeight();
-        } else {
-            mMultiplierX = map->tileWidth();
-            mMultiplierY = map->tileHeight();
-        }
-    }
-
-    QPoint operator() (qreal x, qreal y) const
-    {
-        return QPoint(qRound(x * mMultiplierX),
-                      qRound(y * mMultiplierY));
-    }
-
-private:
-    int mMultiplierX;
-    int mMultiplierY;
-};
-
 QVariant MapToVariantConverter::toVariant(const ObjectGroup *objectGroup) const
 {
     QVariantMap objectGroupVariant;
@@ -242,15 +232,10 @@ QVariant MapToVariantConverter::toVariant(const ObjectGroup *objectGroup) const
         if (!object->cell().isEmpty())
             objectVariant["gid"] = mGidMapper.cellToGid(object->cell());
 
-        const TileToPixelCoordinates toPixel(objectGroup->map());
-
-        const QPoint pos = toPixel(object->x(), object->y());
-        const QPoint size = toPixel(object->width(), object->height());
-
-        objectVariant["x"] = pos.x();
-        objectVariant["y"] = pos.y();
-        objectVariant["width"] = size.x();
-        objectVariant["height"] = size.y();
+        objectVariant["x"] = object->x();
+        objectVariant["y"] = object->y();
+        objectVariant["width"] = object->width();
+        objectVariant["height"] = object->height();
         objectVariant["rotation"] = object->rotation();
         objectVariant["guid"] = object->getGuid();
 
@@ -268,10 +253,9 @@ QVariant MapToVariantConverter::toVariant(const ObjectGroup *objectGroup) const
         if (!polygon.isEmpty()) {
             QVariantList pointVariants;
             foreach (const QPointF &point, polygon) {
-                const QPoint pixelCoordinates = toPixel(point.x(), point.y());
                 QVariantMap pointVariant;
-                pointVariant["x"] = pixelCoordinates.x();
-                pointVariant["y"] = pixelCoordinates.y();
+                pointVariant["x"] = point.x();
+                pointVariant["y"] = point.y();
                 pointVariants.append(pointVariant);
             }
 

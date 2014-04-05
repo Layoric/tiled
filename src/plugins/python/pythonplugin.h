@@ -28,6 +28,7 @@
 #include "mapreaderinterface.h"
 #include "logginginterface.h"
 
+#include <QMap>
 #include <QObject>
 
 namespace Tiled {
@@ -79,8 +80,14 @@ private:
     PyObject *checkFunction(PyObject *pcls, const char *fun) const;
     bool checkFileSupport(PyObject* cls, char *file) const;
     void reloadModules();
+
+    QString mScriptDir;
+    QMap<QString,PyObject*> mKnownExtModules;
+    QMap<QString,PyObject*> mKnownExtClasses;
+    PyObject *pTiledCls;
+
     QString mError;
-    uint lastReload;
+    uint mLastReload;
 };
 
 // Class exposed for python scripts to extend

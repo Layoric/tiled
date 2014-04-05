@@ -22,7 +22,6 @@
 
 #include "map.h"
 #include "mapdocument.h"
-#include "mapdocumentactionhandler.h"
 #include "mapobject.h"
 #include "mapobjectitem.h"
 #include "maprenderer.h"
@@ -79,7 +78,7 @@ void AbstractObjectTool::mouseLeft()
 void AbstractObjectTool::mouseMoved(const QPointF &pos,
                                     Qt::KeyboardModifiers)
 {
-    const QPointF tilePosF = mapDocument()->renderer()->pixelToTileCoords(pos);
+    const QPointF tilePosF = mapDocument()->renderer()->screenToTileCoords(pos);
     const int x = (int) std::floor(tilePosF.x());
     const int y = (int) std::floor(tilePosF.y());
     setStatusInfo(QString(QLatin1String("%1, %2")).arg(x).arg(y));
@@ -113,6 +112,16 @@ MapObjectItem *AbstractObjectTool::topMostObjectItemAt(QPointF pos) const
             return objectItem;
     }
     return 0;
+}
+
+void AbstractObjectTool::duplicateObjects()
+{
+    mapDocument()->duplicateObjects(mapDocument()->selectedObjects());
+}
+
+void AbstractObjectTool::removeObjects()
+{
+    mapDocument()->removeObjects(mapDocument()->selectedObjects());
 }
 
 void AbstractObjectTool::flipHorizontally()
@@ -164,11 +173,14 @@ void AbstractObjectTool::showContextMenu(MapObjectItem *clickedObjectItem,
     const QList<MapObject*> &selectedObjects = mapDocument()->selectedObjects();
     const QList<ObjectGroup*> objectGroups = mapDocument()->map()->objectGroups();
 
-    MapDocumentActionHandler *handler = MapDocumentActionHandler::instance();
-
     QMenu menu;
-    menu.addAction(handler->actionDuplicateObjects());
-    menu.addAction(handler->actionRemoveObjects());
+    QAction *duplicateAction = menu.addAction(tr("Duplicate %n Object(s)", "", selection.size()),
+                                              this, SLOT(duplicateObjects()));
+    QAction *removeAction = menu.addAction(tr("Remove %n Object(s)", "", selection.size()),
+                                           this, SLOT(removeObjects()));
+
+    duplicateAction->setIcon(QIcon(QLatin1String(":/images/16x16/stock-duplicate-16.png")));
+    removeAction->setIcon(QIcon(QLatin1String(":/images/16x16/edit-delete.png")));
 
     menu.addSeparator();
     menu.addAction(tr("Flip Horizontally"), this, SLOT(flipHorizontally()), QKeySequence(tr("X")));
@@ -200,6 +212,7 @@ void AbstractObjectTool::showContextMenu(MapObjectItem *clickedObjectItem,
     // TODO: Implement editing of properties for multiple objects
     propertiesAction->setEnabled(selectedObjects.size() == 1);
 
+    Utils::setThemeIcon(removeAction, "edit-delete");
     Utils::setThemeIcon(propertiesAction, "document-properties");
 
     QAction *action = menu.exec(screenPos);
@@ -213,6 +226,8 @@ void AbstractObjectTool::showContextMenu(MapObjectItem *clickedObjectItem,
         return;
     }
 
-    if (ObjectGroup *objectGroup = action->data().value<ObjectGroup*>())
-        handler->moveObjectsToGroup(objectGroup);
+    if (ObjectGroup *objectGroup = action->data().value<ObjectGroup*>()) {
+        mapDocument()->moveObjectsToGroup(mapDocument()->selectedObjects(),
+                                          objectGroup);
+    }
 }

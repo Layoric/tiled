@@ -52,7 +52,7 @@ void Preferences::deleteInstance()
 }
 
 Preferences::Preferences()
-    : mSettings(new QSettings)
+    : mSettings(new QSettings(this))
 {
     // Retrieve storage settings
     mSettings->beginGroup(QLatin1String("Storage"));
@@ -67,6 +67,7 @@ Preferences::Preferences()
     mSettings->beginGroup(QLatin1String("Interface"));
     mShowGrid = boolValue("ShowGrid");
     mShowTileObjectOutlines = boolValue("ShowTileObjectOutlines");
+    mShowTileAnimations = boolValue("ShowTileAnimations", true);
     mSnapToGrid = boolValue("SnapToGrid");
     mSnapToFineGrid = boolValue("SnapToFineGrid");
     mGridColor = colorValue("GridColor", Qt::black);
@@ -100,11 +101,11 @@ Preferences::Preferences()
 
     TilesetManager *tilesetManager = TilesetManager::instance();
     tilesetManager->setReloadTilesetsOnChange(mReloadTilesetsOnChange);
+    tilesetManager->setAnimateTiles(mShowTileAnimations);
 }
 
 Preferences::~Preferences()
 {
-    delete mSettings;
 }
 
 void Preferences::setShowGrid(bool showGrid)
@@ -126,6 +127,21 @@ void Preferences::setShowTileObjectOutlines(bool enabled)
     mSettings->setValue(QLatin1String("Interface/ShowTileObjectOutlines"),
                         mShowTileObjectOutlines);
     emit showTileObjectOutlinesChanged(mShowTileObjectOutlines);
+}
+
+void Preferences::setShowTileAnimations(bool enabled)
+{
+    if (mShowTileAnimations == enabled)
+        return;
+
+    mShowTileAnimations = enabled;
+    mSettings->setValue(QLatin1String("Interface/ShowTileAnimations"),
+                        mShowTileAnimations);
+
+    TilesetManager *tilesetManager = TilesetManager::instance();
+    tilesetManager->setAnimateTiles(mShowTileAnimations);
+
+    emit showTileAnimationsChanged(mShowTileAnimations);
 }
 
 void Preferences::setSnapToGrid(bool snapToGrid)
