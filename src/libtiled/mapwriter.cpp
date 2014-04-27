@@ -517,7 +517,6 @@ void MapWriterPrivate::writeObject(QXmlStreamWriter &w,
         w.writeAttribute(QLatin1String("gid"), QString::number(gid));
     }
 
-
     // Convert from tile to pixel coordinates
     const ObjectGroup *objectGroup = mapObject->objectGroup();
     const TileToPixelCoordinates toPixel(objectGroup->map());
