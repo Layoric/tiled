@@ -213,6 +213,11 @@ public:
     bool loadFromImage(const QImage &image, const QString &fileName);
 
     /**
+     * Convenience override that loads the image using the QImage constructor.
+     */
+    bool loadFromImage(const QString &fileName);
+
+    /**
      * This checks if there is a similar tileset in the given list.
      * It is needed for replacing this tileset by its similar copy.
      */
@@ -280,7 +285,7 @@ public:
     int terrainTransitionPenalty(int terrainType0, int terrainType1);
 
     /**
-     * Add a new tile to the end of the tileset
+     * Adds a new tile to the end of the tileset.
      */
     Tile *addTile(const QPixmap &image, const QString &source = QString());
 
@@ -288,7 +293,7 @@ public:
     void removeTiles(int index, int count);
 
     /**
-     * Set the \a image to be used for the tile with the given \a id.
+     * Sets the \a image to be used for the tile with the given \a id.
      */
     void setTileImage(int id, const QPixmap &image,
                       const QString &source = QString());

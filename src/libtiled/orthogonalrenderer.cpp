@@ -58,13 +58,11 @@ QRect OrthogonalRenderer::boundingRect(const QRect &rect) const
 QRectF OrthogonalRenderer::boundingRect(const MapObject *object) const
 {
     const QRectF bounds = object->bounds();
-    const QRectF rect(tileToPixelCoords(bounds.topLeft()),
-                      tileToPixelCoords(bounds.bottomRight()));
 
     QRectF boundingRect;
 
     if (!object->cell().isEmpty()) {
-        const QPointF bottomLeft = rect.topLeft();
+        const QPointF bottomLeft = bounds.topLeft();
         const Tile *tile = object->cell().tile;
         const QSize imgSize = tile->image().size();
         const QPoint tileOffset = tile->tileset()->tileOffset();
@@ -78,17 +76,17 @@ QRectF OrthogonalRenderer::boundingRect(const MapObject *object) const
         switch (object->shape()) {
         case MapObject::Ellipse:
         case MapObject::Rectangle:
-            if (rect.isNull()) {
-                boundingRect = rect.adjusted(-10 - extraSpace,
-                                             -10 - extraSpace,
-                                             10 + extraSpace + 1,
-                                             10 + extraSpace + 1);
+            if (bounds.isNull()) {
+                boundingRect = bounds.adjusted(-10 - extraSpace,
+                                               -10 - extraSpace,
+                                               10 + extraSpace + 1,
+                                               10 + extraSpace + 1);
             } else {
                 const int nameHeight = object->name().isEmpty() ? 0 : 15;
-                boundingRect = rect.adjusted(-extraSpace,
-                                             -nameHeight - extraSpace,
-                                             extraSpace + 1,
-                                             extraSpace + 1);
+                boundingRect = bounds.adjusted(-extraSpace,
+                                               -nameHeight - extraSpace,
+                                               extraSpace + 1,
+                                               extraSpace + 1);
             }
             break;
 
@@ -96,7 +94,7 @@ QRectF OrthogonalRenderer::boundingRect(const MapObject *object) const
         case MapObject::Polyline: {
             const QPointF &pos = object->position();
             const QPolygonF polygon = object->polygon().translated(pos);
-            QPolygonF screenPolygon = tileToPixelCoords(polygon);
+            QPolygonF screenPolygon = pixelToScreenCoords(polygon);
             boundingRect = screenPolygon.boundingRect().adjusted(-extraSpace,
                                                                  -extraSpace,
                                                                  extraSpace + 1,
@@ -119,13 +117,11 @@ QPainterPath OrthogonalRenderer::shape(const MapObject *object) const
         switch (object->shape()) {
         case MapObject::Rectangle: {
             const QRectF bounds = object->bounds();
-            const QRectF rect(tileToPixelCoords(bounds.topLeft()),
-                              tileToPixelCoords(bounds.bottomRight()));
 
-            if (rect.isNull()) {
-                path.addEllipse(rect.topLeft(), 20, 20);
+            if (bounds.isNull()) {
+                path.addEllipse(bounds.topLeft(), 20, 20);
             } else {
-                path.addRoundedRect(rect, 10, 10);
+                path.addRoundedRect(bounds, 10, 10);
             }
             break;
         }
@@ -133,7 +129,7 @@ QPainterPath OrthogonalRenderer::shape(const MapObject *object) const
         case MapObject::Polyline: {
             const QPointF &pos = object->position();
             const QPolygonF polygon = object->polygon().translated(pos);
-            const QPolygonF screenPolygon = tileToPixelCoords(polygon);
+            const QPolygonF screenPolygon = pixelToScreenCoords(polygon);
             if (object->shape() == MapObject::Polygon) {
                 path.addPolygon(screenPolygon);
             } else {
@@ -147,13 +143,11 @@ QPainterPath OrthogonalRenderer::shape(const MapObject *object) const
         }
         case MapObject::Ellipse: {
             const QRectF bounds = object->bounds();
-            const QRectF rect(tileToPixelCoords(bounds.topLeft()),
-                              tileToPixelCoords(bounds.bottomRight()));
 
-            if (rect.isNull()) {
-                path.addEllipse(rect.topLeft(), 20, 20);
+            if (bounds.isNull()) {
+                path.addEllipse(bounds.topLeft(), 20, 20);
             } else {
-                path.addEllipse(rect);
+                path.addEllipse(bounds);
             }
             break;
         }
@@ -181,7 +175,8 @@ void OrthogonalRenderer::drawGrid(QPainter *painter, const QRectF &rect,
 
     gridColor.setAlpha(128);
 
-    QPen gridPen(gridColor, 0);
+    QPen gridPen(gridColor);
+    gridPen.setCosmetic(true);
     gridPen.setDashPattern(QVector<qreal>() << 2 << 2);
 
     if (startY < endY) {
@@ -273,8 +268,7 @@ void OrthogonalRenderer::drawMapObject(QPainter *painter,
     painter->save();
 
     const QRectF bounds = object->bounds();
-    QRectF rect(tileToPixelCoords(bounds.topLeft()),
-                tileToPixelCoords(bounds.bottomRight()));
+    QRectF rect(bounds);
 
     painter->translate(rect.topLeft());
     rect.moveTopLeft(QPointF(0, 0));
@@ -288,7 +282,7 @@ void OrthogonalRenderer::drawMapObject(QPainter *painter,
         if (testFlag(ShowTileObjectOutlines)) {
             const QRect rect = cell.tile->image().rect();
             QPen pen(Qt::SolidLine);
-            pen.setWidth(0);
+            pen.setCosmetic(true);
             painter->setPen(pen);
             painter->drawRect(rect);
             pen.setStyle(Qt::DotLine);
@@ -298,12 +292,15 @@ void OrthogonalRenderer::drawMapObject(QPainter *painter,
         }
     } else {
         const qreal lineWidth = objectLineWidth();
-        const QPen linePen(color, lineWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        const QPen shadowPen(Qt::black, lineWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        const qreal shadowDist = lineWidth == 0 ? (1 / painter->transform().m11()) :
-                                                  qMin(qreal(2), lineWidth);
+        const qreal scale = painterScale();
+        const qreal shadowDist = (lineWidth == 0 ? 1 : lineWidth) / scale;
         const QPointF shadowOffset = QPointF(shadowDist * 0.5,
                                              shadowDist * 0.5);
+
+        QPen linePen(color, lineWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        linePen.setCosmetic(true);
+        QPen shadowPen(linePen);
+        shadowPen.setColor(Qt::black);
 
         QColor brushColor = color;
         brushColor.setAlpha(50);
@@ -311,7 +308,16 @@ void OrthogonalRenderer::drawMapObject(QPainter *painter,
 
         painter->setRenderHint(QPainter::Antialiasing);
 
-        switch (object->shape()) {
+        // Trying to draw an ellipse with 0-width is causing a hang in
+        // CoreGraphics when drawing the path requested by the
+        // QCoreGraphicsPaintEngine. Draw them as rectangle instead.
+        MapObject::Shape shape = object->shape();
+        if (shape == MapObject::Ellipse &&
+                (rect.width() == qreal(0) ^ rect.height() == qreal(0))) {
+            shape = MapObject::Rectangle;
+        }
+
+        switch (shape) {
         case MapObject::Rectangle: {
             if (rect.isNull())
                 rect = QRectF(QPointF(-10, -10), QSizeF(20, 20));
@@ -336,7 +342,7 @@ void OrthogonalRenderer::drawMapObject(QPainter *painter,
         }
 
         case MapObject::Polyline: {
-            QPolygonF screenPolygon = tileToPixelCoords(object->polygon());
+            QPolygonF screenPolygon = pixelToScreenCoords(object->polygon());
 
             painter->setPen(shadowPen);
             painter->drawPolyline(screenPolygon.translated(shadowOffset));
@@ -348,7 +354,7 @@ void OrthogonalRenderer::drawMapObject(QPainter *painter,
         }
 
         case MapObject::Polygon: {
-            QPolygonF screenPolygon = tileToPixelCoords(object->polygon());
+            QPolygonF screenPolygon = pixelToScreenCoords(object->polygon());
 
             painter->setPen(shadowPen);
             painter->drawPolygon(screenPolygon.translated(shadowOffset));
@@ -397,4 +403,26 @@ QPointF OrthogonalRenderer::tileToPixelCoords(qreal x, qreal y) const
 {
     return QPointF(x * map()->tileWidth(),
                    y * map()->tileHeight());
+}
+
+QPointF OrthogonalRenderer::screenToTileCoords(qreal x, qreal y) const
+{
+    return QPointF(x / map()->tileWidth(),
+                   y / map()->tileHeight());
+}
+
+QPointF OrthogonalRenderer::tileToScreenCoords(qreal x, qreal y) const
+{
+    return QPointF(x * map()->tileWidth(),
+                   y * map()->tileHeight());
+}
+
+QPointF OrthogonalRenderer::screenToPixelCoords(qreal x, qreal y) const
+{
+    return QPointF(x, y);
+}
+
+QPointF OrthogonalRenderer::pixelToScreenCoords(qreal x, qreal y) const
+{
+    return QPointF(x, y);
 }

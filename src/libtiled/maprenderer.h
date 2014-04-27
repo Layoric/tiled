@@ -61,6 +61,7 @@ public:
         : mMap(map)
         , mFlags(0)
         , mObjectLineWidth(2)
+        , mPainterScale(1)
     {}
 
     virtual ~MapRenderer() {}
@@ -147,6 +148,14 @@ public:
     inline QPointF pixelToTileCoords(const QPointF &point) const
     { return pixelToTileCoords(point.x(), point.y()); }
 
+    QPolygonF pixelToScreenCoords(const QPolygonF &polygon) const
+    {
+        QPolygonF screenPolygon(polygon.size());
+        for (int i = polygon.size() - 1; i >= 0; --i)
+            screenPolygon[i] = pixelToScreenCoords(polygon[i]);
+        return screenPolygon;
+    }
+
     /**
      * Returns the pixel coordinates matching the given tile coordinates.
      */
@@ -155,13 +164,43 @@ public:
     inline QPointF tileToPixelCoords(const QPointF &point) const
     { return tileToPixelCoords(point.x(), point.y()); }
 
-    QPolygonF tileToPixelCoords(const QPolygonF &polygon) const
+    inline QRectF tileToPixelCoords(const QRectF &area) const
     {
-        QPolygonF screenPolygon(polygon.size());
-        for (int i = polygon.size() - 1; i >= 0; --i)
-            screenPolygon[i] = tileToPixelCoords(polygon[i]);
-        return screenPolygon;
+        return QRectF(tileToPixelCoords(area.topLeft()),
+                      tileToPixelCoords(area.bottomRight()));
     }
+
+    /**
+     * Returns the tile coordinates matching the given screen position.
+     */
+    virtual QPointF screenToTileCoords(qreal x, qreal y) const = 0;
+
+    inline QPointF screenToTileCoords(const QPointF &point) const
+    { return screenToTileCoords(point.x(), point.y()); }
+
+    /**
+     * Returns the screen position matching the given tile coordinates.
+     */
+    virtual QPointF tileToScreenCoords(qreal x, qreal y) const = 0;
+
+    inline QPointF tileToScreenCoords(const QPointF &point) const
+    { return tileToScreenCoords(point.x(), point.y()); }
+
+    /**
+     * Returns the pixel position matching the given screen position.
+     */
+    virtual QPointF screenToPixelCoords(qreal x, qreal y) const = 0;
+
+    inline QPointF screenToPixelCoords(const QPointF &point) const
+    { return screenToPixelCoords(point.x(), point.y()); }
+
+    /**
+     * Returns the screen position matching the given pixel position.
+     */
+    virtual QPointF pixelToScreenCoords(qreal x, qreal y) const = 0;
+
+    inline QPointF pixelToScreenCoords(const QPointF &point) const
+    { return pixelToScreenCoords(point.x(), point.y()); }
 
     qreal objectLineWidth() const { return mObjectLineWidth; }
     void setObjectLineWidth(qreal lineWidth) { mObjectLineWidth = lineWidth; }
@@ -169,6 +208,9 @@ public:
     void setFlag(RenderFlag flag, bool enabled = true);
     bool testFlag(RenderFlag flag) const
     { return mFlags.testFlag(flag); }
+
+    qreal painterScale() const { return mPainterScale; }
+    void setPainterScale(qreal painterScale) { mPainterScale = painterScale; }
 
     RenderFlags flags() const { return mFlags; }
     void setFlags(RenderFlags flags) { mFlags = flags; }
@@ -186,6 +228,7 @@ private:
 
     RenderFlags mFlags;
     qreal mObjectLineWidth;
+    qreal mPainterScale;
 };
 
 /**

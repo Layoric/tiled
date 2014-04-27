@@ -38,6 +38,7 @@ using namespace Tiled;
 Tileset::~Tileset()
 {
     qDeleteAll(mTiles);
+    qDeleteAll(mTerrainTypes);
 }
 
 Tile *Tileset::tileAt(int id) const
@@ -91,6 +92,11 @@ bool Tileset::loadFromImage(const QImage &image, const QString &fileName)
     mColumnCount = columnCountForWidth(mImageWidth);
     mImageSource = fileName;
     return true;
+}
+
+bool Tileset::loadFromImage(const QString &fileName)
+{
+    return loadFromImage(QImage(fileName), fileName);
 }
 
 Tileset *Tileset::findSimilarTileset(const QList<Tileset*> &tilesets) const

@@ -23,7 +23,6 @@
 
 #include "abstracttool.h"
 #include "maprenderer.h"
-#include "toolmanager.h"
 
 #include <QTabWidget>
 #include <QUndoGroup>
@@ -61,11 +60,6 @@ DocumentManager::DocumentManager(QObject *parent)
             SLOT(currentIndexChanged()));
     connect(mTabWidget, SIGNAL(tabCloseRequested(int)),
             SIGNAL(documentCloseRequested(int)));
-
-    ToolManager *toolManager = ToolManager::instance();
-    setSelectedTool(toolManager->selectedTool());
-    connect(toolManager, SIGNAL(selectedToolChanged(AbstractTool*)),
-            SLOT(setSelectedTool(AbstractTool*)));
 }
 
 DocumentManager::~DocumentManager()
@@ -239,8 +233,8 @@ void DocumentManager::setSelectedTool(AbstractTool *tool)
     if (mSceneWithTool) {
         mSceneWithTool->disableSelectedTool();
 
-        if (mSelectedTool) {
-            mSceneWithTool->setSelectedTool(mSelectedTool);
+        if (tool) {
+            mSceneWithTool->setSelectedTool(tool);
             mSceneWithTool->enableSelectedTool();
         }
     }
@@ -265,5 +259,5 @@ void DocumentManager::centerViewOn(qreal x, qreal y)
     if (!view)
         return;
 
-    view->centerOn(currentDocument()->renderer()->tileToPixelCoords(x, y));
+    view->centerOn(currentDocument()->renderer()->pixelToScreenCoords(x, y));
 }

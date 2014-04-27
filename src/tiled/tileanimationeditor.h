@@ -1,6 +1,6 @@
 /*
- * resizelayer.h
- * Copyright 2009, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * tileanimationeditor.h
+ * Copyright 2014, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
  *
  * This file is part of Tiled.
  *
@@ -18,51 +18,63 @@
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RESIZELAYER_H
-#define RESIZELAYER_H
+#ifndef TILED_INTERNAL_TILEANIMATIONEDITOR_H
+#define TILED_INTERNAL_TILEANIMATIONEDITOR_H
 
-#include <QPoint>
-#include <QSize>
-#include <QUndoCommand>
+#include <QWidget>
+
+namespace Ui {
+class TileAnimationEditor;
+}
 
 namespace Tiled {
 
-class Layer;
+class Tile;
 
 namespace Internal {
 
+class FrameListModel;
 class MapDocument;
 
-/**
- * Undo command that resizes a map layer.
- */
-class ResizeLayer : public QUndoCommand
+class TileAnimationEditor : public QWidget
 {
-public:
-    /**
-     * Creates an undo command that resizes the layer at \a index to \a size,
-     * shifting the tiles by \a offset.
-     */
-    ResizeLayer(MapDocument *mapDocument,
-                int index,
-                const QSize &size,
-                const QPoint &offset);
+    Q_OBJECT
 
-    ~ResizeLayer();
+public:
+    explicit TileAnimationEditor(QWidget *parent = 0);
+    ~TileAnimationEditor();
+
+    void setMapDocument(MapDocument *mapDocument);
+
+    void writeSettings();
+
+signals:
+    void closed();
+
+public slots:
+    void setTile(Tile *tile);
+
+protected:
+    void closeEvent(QCloseEvent *);
+
+private slots:
+    void framesEdited();
+    void tileAnimationChanged(Tile *tile);
 
     void undo();
     void redo();
+    void delete_();
 
 private:
-    Layer *swapLayer(Layer *layer);
+    Ui::TileAnimationEditor *mUi;
 
     MapDocument *mMapDocument;
-    int mIndex;
-    Layer *mOriginalLayer;
-    Layer *mResizedLayer;
+    Tile *mTile;
+    FrameListModel *mFrameListModel;
+    bool mApplyingChanges;
 };
 
 } // namespace Internal
 } // namespace Tiled
 
-#endif // RESIZELAYER_H
+#endif // TILED_INTERNAL_TILEANIMATIONEDITOR_H

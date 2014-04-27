@@ -22,7 +22,6 @@
 #include "abstracttool.h"
 
 #include "mapdocument.h"
-#include "mapdocumentactionhandler.h"
 
 #include <QKeyEvent>
 
@@ -34,12 +33,9 @@ AbstractTool::AbstractTool(const QString &name, const QIcon &icon,
     , mName(name)
     , mIcon(icon)
     , mShortcut(shortcut)
-    , mEnabled(true)
+    , mEnabled(false)
     , mMapDocument(0)
 {
-    MapDocumentActionHandler *handler = MapDocumentActionHandler::instance();
-    connect(handler, SIGNAL(mapDocumentChanged(MapDocument*)),
-            SLOT(setMapDocument(MapDocument*)));
 }
 
 /**
@@ -68,11 +64,6 @@ void AbstractTool::keyPressed(QKeyEvent *event)
     event->ignore();
 }
 
-void AbstractTool::updateEnabledState()
-{
-    setEnabled(mMapDocument != 0);
-}
-
 void AbstractTool::setMapDocument(MapDocument *mapDocument)
 {
     if (mMapDocument == mapDocument)
@@ -98,3 +89,7 @@ void AbstractTool::setMapDocument(MapDocument *mapDocument)
     updateEnabledState();
 }
 
+void AbstractTool::updateEnabledState()
+{
+    setEnabled(mMapDocument != 0);
+}

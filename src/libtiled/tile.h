@@ -1,6 +1,6 @@
 /*
  * tile.h
- * Copyright 2008-2012, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * Copyright 2008-2014, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
  * Copyright 2009, Edward Hutchins <eah1@yahoo.com>
  *
  * This file is part of libtiled.
@@ -36,6 +36,7 @@
 
 namespace Tiled {
 
+class ObjectGroup;
 class Terrain;
 class Tileset;
 
@@ -49,28 +50,23 @@ inline unsigned setTerrainCorner(unsigned terrain, int corner, int terrainId)
     return (terrain & ~mask) | (insert & mask);
 }
 
+/**
+ * A single frame of an animated tile.
+ */
+struct Frame
+{
+    int tileId;
+    int duration;
+};
+
 class TILEDSHARED_EXPORT Tile : public Object
 {
 public:
-    Tile(const QPixmap &image, int id, Tileset *tileset):
-        Object(TileType),
-        mId(id),
-        mTileset(tileset),
-        mImage(image),
-        mTerrain(-1),
-        mTerrainProbability(-1.f)
-    {}
-
+    Tile(const QPixmap &image, int id, Tileset *tileset);
     Tile(const QPixmap &image, const QString &imageSource,
-         int id, Tileset *tileset):
-        Object(TileType),
-        mId(id),
-        mTileset(tileset),
-        mImage(image),
-        mImageSource(imageSource),
-        mTerrain(-1),
-        mTerrainProbability(-1.f)
-    {}
+         int id, Tileset *tileset);
+
+    ~Tile();
 
     /**
      * Returns ID of this tile within its tileset.
@@ -86,6 +82,8 @@ public:
      * Returns the image of this tile.
      */
     const QPixmap &image() const { return mImage; }
+
+    const QPixmap &currentFrameImage() const;
 
     /**
      * Sets the image of this tile.
@@ -153,6 +151,16 @@ public:
      */
     void setTerrainProbability(float probability) { mTerrainProbability = probability; }
 
+    ObjectGroup *objectGroup() const;
+    void setObjectGroup(ObjectGroup *objectGroup);
+    ObjectGroup *swapObjectGroup(ObjectGroup *objectGroup);
+
+    const QVector<Frame> &frames() const;
+    void setFrames(const QVector<Frame> &frames);
+    bool isAnimated() const;
+    int currentFrameIndex() const;
+    bool advanceAnimation(int ms);
+
 private:
     int mId;
     Tileset *mTileset;
@@ -160,9 +168,38 @@ private:
     QString mImageSource;
     unsigned mTerrain;
     float mTerrainProbability;
+    ObjectGroup *mObjectGroup;
+
+    QVector<Frame> mFrames;
+    int mCurrentFrameIndex;
+    int mUnusedTime;
 
     friend class Tileset; // To allow changing the tile id
 };
+
+/**
+ * @return The group of objects associated with this tile. This is generally
+ *         expected to be used for editing collision shapes.
+ */
+inline ObjectGroup *Tile::objectGroup() const
+{
+    return mObjectGroup;
+}
+
+inline const QVector<Frame> &Tile::frames() const
+{
+    return mFrames;
+}
+
+inline bool Tile::isAnimated() const
+{
+    return !mFrames.isEmpty();
+}
+
+inline int Tile::currentFrameIndex() const
+{
+    return mCurrentFrameIndex;
+}
 
 } // namespace Tiled
 

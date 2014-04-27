@@ -70,6 +70,8 @@ public:
     QVariant data(const QModelIndex &index,
                   int role = Qt::DisplayRole) const;
 
+
+
     /**
      * Returns a small size hint, to prevent the headers from affecting the
      * minimum width and height of the sections.
@@ -77,10 +79,17 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation,
                         int role = Qt::DisplayRole) const;
 
+    Qt::ItemFlags flags(const QModelIndex &index) const;
+
+    QStringList mimeTypes() const;
+    QMimeData *mimeData(const QModelIndexList &indexes) const;
+
     /**
      * Returns the tile at the given index.
      */
     Tile *tileAt(const QModelIndex &index) const;
+
+    int tileIndexAt(const QModelIndex &index) const;
 
     /**
      * Returns the index of the given \a tile. The tile is required to be from
@@ -114,6 +123,14 @@ public slots:
      * \sa MapDocument::tileTerrainChanged
      */
     void tilesChanged(const QList<Tile*> &tiles);
+
+    /**
+     * Should be called when anything changes about the given \a tile that
+     * affects its display in any views on this model.
+     *
+     * \sa MapDocument::tileAnimationChanged
+     */
+    void tileChanged(Tile *tile);
 
 private:
     Tileset *mTileset;

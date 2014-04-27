@@ -21,6 +21,7 @@
 #include "propertybrowser.h"
 
 #include "changelayer.h"
+#include "changeimagelayerposition.h"
 #include "changeimagelayerproperties.h"
 #include "changemapobject.h"
 #include "changemapproperties.h"
@@ -40,6 +41,7 @@
 #include "rotatemapobject.h"
 #include "terrain.h"
 #include "terrainmodel.h"
+#include "tile.h"
 #include "tilelayer.h"
 #include "tilesetchanges.h"
 #include "utils.h"
@@ -55,10 +57,12 @@ namespace Internal {
 
 PropertyBrowser::PropertyBrowser(QWidget *parent)
     : QtTreePropertyBrowser(parent)
+    , mUpdating(false)
     , mObject(0)
     , mMapDocument(0)
     , mVariantManager(new VariantPropertyManager(this))
     , mGroupManager(new QtGroupPropertyManager(this))
+    , mCustomPropertiesGroup(0)
 {
     setFactoryForManager(mVariantManager, new VariantEditorFactory(this));
     setResizeMode(ResizeToContents);
@@ -400,6 +404,7 @@ void PropertyBrowser::addImageLayerProperties()
                                       Utils::readableImageFormatsFilter());
 
     createProperty(ColorProperty, QVariant::Color, tr("Transparent Color"), groupProperty);
+    createProperty(PositionProperty, QVariant::Point, tr("Position"), groupProperty);
     addProperty(groupProperty);
 }
 
@@ -414,6 +419,7 @@ void PropertyBrowser::addTilesetProperties()
 void PropertyBrowser::addTileProperties()
 {
     QtProperty *groupProperty = mGroupManager->addProperty(tr("Tile"));
+    createProperty(IdProperty, QVariant::Int, tr("ID"), groupProperty)->setEnabled(false);
     addProperty(groupProperty);
 }
 
@@ -602,6 +608,14 @@ void PropertyBrowser::applyImageLayerValue(PropertyId id, const QVariant &val)
                                                        imageSource));
         break;
     }
+    case PositionProperty: {
+        QPoint pos = val.value<QPoint>();
+
+        undoStack->push(new ChangeImageLayerPosition(mMapDocument,
+                                                     imageLayer,
+                                                     pos));
+        break;
+    }
     default:
         break;
     }
@@ -716,6 +730,7 @@ void PropertyBrowser::updateProperties()
             const ImageLayer *imageLayer = static_cast<const ImageLayer*>(layer);
             mIdToProperty[ImageSourceProperty]->setValue(imageLayer->imageSource());
             mIdToProperty[ColorProperty]->setValue(imageLayer->transparentColor());
+            mIdToProperty[PositionProperty]->setValue(imageLayer->position());
             break;
         }
         break;
@@ -726,8 +741,11 @@ void PropertyBrowser::updateProperties()
         mIdToProperty[TileOffsetProperty]->setValue(tileset->tileOffset());
         break;
     }
-    case Object::TileType:
+    case Object::TileType: {
+        const Tile *tile = static_cast<const Tile*>(mObject);
+        mIdToProperty[IdProperty]->setValue(tile->id());
         break;
+    }
     case Object::TerrainType: {
         const Terrain *terrain = static_cast<const Terrain*>(mObject);
         mIdToProperty[NameProperty]->setValue(terrain->name());

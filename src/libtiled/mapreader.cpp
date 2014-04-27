@@ -1,6 +1,6 @@
 /*
  * mapreader.cpp
- * Copyright 2008-2010, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * Copyright 2008-2014, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
  * Copyright 2010, Jeff Bland <jksb@member.fsf.org>
  * Copyright 2010, Dennis Honeyman <arcticuno@gmail.com>
  *
@@ -108,6 +108,7 @@ private:
     ObjectGroup *readObjectGroup();
     MapObject *readObject();
     QPolygonF readPolygon();
+    QVector<Frame> readAnimationFrames();
 
     Properties readProperties();
     void readProperty(Properties *properties);
@@ -386,9 +387,34 @@ void MapReaderPrivate::readTilesetTile(Tileset *tileset)
             if (!source.isEmpty())
                 source = p->resolveReference(source, mPath);
             tileset->setTileImage(id, QPixmap::fromImage(readImage()), source);
+        } else if (xml.name() == QLatin1String("objectgroup")) {
+            tile->setObjectGroup(readObjectGroup());
+        } else if (xml.name() == QLatin1String("animation")) {
+            tile->setFrames(readAnimationFrames());
         } else {
             readUnknownElement();
         }
+    }
+
+    // Temporary code to support TMW-style animation frame properties
+    if (!tile->isAnimated() && tile->hasProperty(QLatin1String("animation-frame0"))) {
+        QVector<Frame> frames;
+
+        for (int i = 0; ; i++) {
+            QString frameName = QLatin1String("animation-frame") + QString::number(i);
+            QString delayName = QLatin1String("animation-delay") + QString::number(i);
+
+            if (tile->hasProperty(frameName) && tile->hasProperty(delayName)) {
+                Frame frame;
+                frame.tileId = tile->property(frameName).toInt();
+                frame.duration = tile->property(delayName).toInt() * 10;
+                frames.append(frame);
+            } else {
+                break;
+            }
+        }
+
+        tile->setFrames(frames);
     }
 }
 
@@ -768,22 +794,6 @@ void MapReaderPrivate::readImageLayerImage(ImageLayer *imageLayer)
     xml.skipCurrentElement();
 }
 
-static QPointF pixelToTileCoordinates(Map *map, int x, int y)
-{
-    const int tileHeight = map->tileHeight();
-    const int tileWidth = map->tileWidth();
-
-    if (map->orientation() == Map::Isometric) {
-        // Isometric needs special handling, since the pixel values are based
-        // solely on the tile height.
-        return QPointF((qreal) x / tileHeight,
-                       (qreal) y / tileHeight);
-    } else {
-        return QPointF((qreal) x / tileWidth,
-                       (qreal) y / tileHeight);
-    }
-}
-
 MapObject *MapReaderPrivate::readObject()
 {
     Q_ASSERT(xml.isStartElement() && xml.name() == QLatin1String("object"));
@@ -791,18 +801,17 @@ MapObject *MapReaderPrivate::readObject()
     const QXmlStreamAttributes atts = xml.attributes();
     const QString name = atts.value(QLatin1String("name")).toString();
     const unsigned gid = atts.value(QLatin1String("gid")).toString().toUInt();
-    const int x = atts.value(QLatin1String("x")).toString().toInt();
-    const int y = atts.value(QLatin1String("y")).toString().toInt();
-    const int width = atts.value(QLatin1String("width")).toString().toInt();
-    const int height = atts.value(QLatin1String("height")).toString().toInt();
+    const qreal x = atts.value(QLatin1String("x")).toString().toDouble();
+    const qreal y = atts.value(QLatin1String("y")).toString().toDouble();
+    const qreal width = atts.value(QLatin1String("width")).toString().toDouble();
+    const qreal height = atts.value(QLatin1String("height")).toString().toDouble();
     const QString type = atts.value(QLatin1String("type")).toString();
     const QStringRef visibleRef = atts.value(QLatin1String("visible"));
 
-    const QPointF pos = pixelToTileCoordinates(mMap, x, y);
-    const QPointF size = pixelToTileCoordinates(mMap, width, height);
+    const QPointF pos(x, y);
+    const QSizeF size(width, height);
 
-    MapObject *object = new MapObject(name, type, pos, QSizeF(size.x(),
-                                                              size.y()));
+    MapObject *object = new MapObject(name, type, pos, size);
 
     bool ok;
     const qreal rotation = atts.value(QLatin1String("rotation")).toString().toDouble(&ok);
@@ -856,14 +865,14 @@ QPolygonF MapReaderPrivate::readPolygon()
             break;
         }
 
-        const int x = point.left(commaPos).toInt(&ok);
+        const qreal x = point.left(commaPos).toDouble(&ok);
         if (!ok)
             break;
-        const int y = point.mid(commaPos + 1).toInt(&ok);
+        const qreal y = point.mid(commaPos + 1).toDouble(&ok);
         if (!ok)
             break;
 
-        polygon.append(pixelToTileCoordinates(mMap, x, y));
+        polygon.append(QPointF(x, y));
     }
 
     if (!ok)
@@ -871,6 +880,30 @@ QPolygonF MapReaderPrivate::readPolygon()
 
     xml.skipCurrentElement();
     return polygon;
+}
+
+QVector<Frame> MapReaderPrivate::readAnimationFrames()
+{
+    Q_ASSERT(xml.isStartElement() && xml.name() == QLatin1String("animation"));
+
+    QVector<Frame> frames;
+
+    while (xml.readNextStartElement()) {
+        if (xml.name() == QLatin1String("frame")) {
+            const QXmlStreamAttributes atts = xml.attributes();
+
+            Frame frame;
+            frame.tileId = atts.value(QLatin1String("tileid")).toString().toInt();
+            frame.duration = atts.value(QLatin1String("duration")).toString().toInt();
+            frames.append(frame);
+
+            xml.skipCurrentElement();
+        } else {
+            readUnknownElement();
+        }
+    }
+
+    return frames;
 }
 
 Properties MapReaderPrivate::readProperties()

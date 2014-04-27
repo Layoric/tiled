@@ -1,6 +1,6 @@
 /*
  * mapwriter.cpp
- * Copyright 2008-2010, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * Copyright 2008-2014, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
  * Copyright 2010, Jeff Bland <jksb@member.fsf.org>
  * Copyright 2010, Dennis Honeyman <arcticuno@gmail.com>
  *
@@ -302,8 +302,9 @@ void MapWriterPrivate::writeTileset(QXmlStreamWriter &w, const Tileset *tileset,
         const Properties properties = tile->properties();
         unsigned terrain = tile->terrain();
         float probability = tile->terrainProbability();
+        ObjectGroup *objectGroup = tile->objectGroup();
 
-        if (!properties.isEmpty() || terrain != 0xFFFFFFFF || probability != -1.f || imageSource.isEmpty()) {
+        if (!properties.isEmpty() || terrain != 0xFFFFFFFF || probability != -1.f || imageSource.isEmpty() || objectGroup || tile->isAnimated()) {
             w.writeStartElement(QLatin1String("tile"));
             w.writeAttribute(QLatin1String("id"), QString::number(i));
             if (terrain != 0xFFFFFFFF)
@@ -314,6 +315,14 @@ void MapWriterPrivate::writeTileset(QXmlStreamWriter &w, const Tileset *tileset,
                 writeProperties(w, properties);
             if (imageSource.isEmpty()) {
                 w.writeStartElement(QLatin1String("image"));
+
+                const QSize tileSize = tile->size();
+                if (!tileSize.isNull()) {
+                    w.writeAttribute(QLatin1String("width"),
+                                     QString::number(tileSize.width()));
+                    w.writeAttribute(QLatin1String("height"),
+                                     QString::number(tileSize.height()));
+                }
 
                 if (tile->imageSource().isEmpty()) {
                     w.writeAttribute(QLatin1String("format"),
@@ -336,6 +345,21 @@ void MapWriterPrivate::writeTileset(QXmlStreamWriter &w, const Tileset *tileset,
 
                 w.writeEndElement(); // </image>
             }
+            if (objectGroup)
+                writeObjectGroup(w, objectGroup);
+            if (tile->isAnimated()) {
+                const QVector<Frame> &frames = tile->frames();
+
+                w.writeStartElement(QLatin1String("animation"));
+                foreach (const Frame &frame, frames) {
+                    w.writeStartElement(QLatin1String("frame"));
+                    w.writeAttribute(QLatin1String("tileid"), QString::number(frame.tileId));
+                    w.writeAttribute(QLatin1String("duration"), QString::number(frame.duration));
+                    w.writeEndElement(); // </frame>
+                }
+                w.writeEndElement(); // </animation>
+            }
+
             w.writeEndElement(); // </tile>
         }
     }
@@ -429,10 +453,16 @@ void MapWriterPrivate::writeTileLayer(QXmlStreamWriter &w,
 void MapWriterPrivate::writeLayerAttributes(QXmlStreamWriter &w,
                                             const Layer *layer)
 {
-    w.writeAttribute(QLatin1String("name"), layer->name());
-    w.writeAttribute(QLatin1String("width"), QString::number(layer->width()));
-    w.writeAttribute(QLatin1String("height"),
-                     QString::number(layer->height()));
+    if (!layer->name().isEmpty())
+        w.writeAttribute(QLatin1String("name"), layer->name());
+
+    if (layer->layerType() == Layer::TileLayerType) {
+        w.writeAttribute(QLatin1String("width"),
+                         QString::number(layer->width()));
+        w.writeAttribute(QLatin1String("height"),
+                         QString::number(layer->height()));
+    }
+
     const int x = layer->x();
     const int y = layer->y();
     const QString guid = layer->getGuid();
@@ -457,8 +487,10 @@ void MapWriterPrivate::writeObjectGroup(QXmlStreamWriter &w,
         w.writeAttribute(QLatin1String("color"),
                          objectGroup->color().name());
 
-    w.writeAttribute(QLatin1String("draworder"),
-                     drawOrderToString(objectGroup->drawOrder()));
+    if (objectGroup->drawOrder() != ObjectGroup::TopDownOrder) {
+        w.writeAttribute(QLatin1String("draworder"),
+                         drawOrderToString(objectGroup->drawOrder()));
+    }
 
     writeLayerAttributes(w, objectGroup);
     writeProperties(w, objectGroup->properties());
@@ -468,33 +500,6 @@ void MapWriterPrivate::writeObjectGroup(QXmlStreamWriter &w,
 
     w.writeEndElement();
 }
-
-class TileToPixelCoordinates
-{
-public:
-    TileToPixelCoordinates(Map *map)
-    {
-        if (map->orientation() == Map::Isometric) {
-            // Isometric needs special handling, since the pixel values are
-            // based solely on the tile height.
-            mMultiplierX = map->tileHeight();
-            mMultiplierY = map->tileHeight();
-        } else {
-            mMultiplierX = map->tileWidth();
-            mMultiplierY = map->tileHeight();
-        }
-    }
-
-    QPoint operator() (qreal x, qreal y) const
-    {
-        return QPoint(qRound(x * mMultiplierX),
-                      qRound(y * mMultiplierY));
-    }
-
-private:
-    int mMultiplierX;
-    int mMultiplierY;
-};
 
 void MapWriterPrivate::writeObject(QXmlStreamWriter &w,
                                    const MapObject *mapObject)
@@ -512,12 +517,13 @@ void MapWriterPrivate::writeObject(QXmlStreamWriter &w,
         w.writeAttribute(QLatin1String("gid"), QString::number(gid));
     }
 
+
     // Convert from tile to pixel coordinates
     const ObjectGroup *objectGroup = mapObject->objectGroup();
     const TileToPixelCoordinates toPixel(objectGroup->map());
 
-    QPoint pos = toPixel(mapObject->x(), mapObject->y());
-    QPoint size = toPixel(mapObject->width(), mapObject->height());
+    QPointF pos = QPointF(mapObject->x(), mapObject->y());
+    QPointF size = QPointF(mapObject->width(), mapObject->height());
     QString guid = mapObject->getGuid();
 
     w.writeAttribute(QLatin1String("x"), QString::number(pos.x()));
@@ -547,10 +553,9 @@ void MapWriterPrivate::writeObject(QXmlStreamWriter &w,
 
         QString points;
         foreach (const QPointF &point, polygon) {
-            const QPoint pos = toPixel(point.x(), point.y());
-            points.append(QString::number(pos.x()));
+            points.append(QString::number(point.x()));
             points.append(QLatin1Char(','));
-            points.append(QString::number(pos.y()));
+            points.append(QString::number(point.y()));
             points.append(QLatin1Char(' '));
         }
         points.chop(1);

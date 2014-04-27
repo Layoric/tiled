@@ -1,6 +1,6 @@
 /*
  * mapscene.cpp
- * Copyright 2008-2013, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * Copyright 2008-2014, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
  * Copyright 2008, Roderic Morris <roderic@ccs.neu.edu>
  * Copyright 2009, Edward Hutchins <eah1@yahoo.com>
  * Copyright 2010, Jeff Bland <jksb@member.fsf.org>
@@ -69,6 +69,8 @@ MapScene::MapScene(QObject *parent):
     TilesetManager *tilesetManager = TilesetManager::instance();
     connect(tilesetManager, SIGNAL(tilesetChanged(Tileset*)),
             this, SLOT(tilesetChanged(Tileset*)));
+    connect(tilesetManager, SIGNAL(repaintTileset(Tileset*)),
+            this, SLOT(tilesetChanged(Tileset*)));
 
     Preferences *prefs = Preferences::instance();
     connect(prefs, SIGNAL(showGridChanged(bool)), SLOT(setGridVisible(bool)));
@@ -103,8 +105,14 @@ MapScene::~MapScene()
 
 void MapScene::setMapDocument(MapDocument *mapDocument)
 {
-    if (mMapDocument)
+    if (mMapDocument) {
         mMapDocument->disconnect(this);
+
+        if (!mSelectedObjectItems.isEmpty()) {
+            mSelectedObjectItems.clear();
+            emit selectedObjectItemsChanged();
+        }
+    }
 
     mMapDocument = mapDocument;
 

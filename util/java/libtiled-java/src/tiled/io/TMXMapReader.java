@@ -30,15 +30,25 @@ package tiled.io;
 
 import java.awt.Color;
 import java.awt.Image;
-import java.io.*;
+import java.awt.Polygon;
+import java.awt.geom.Ellipse2D;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Properties;
+import java.util.StringTokenizer;
+import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
+
 import javax.imageio.ImageIO;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -50,8 +60,15 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import tiled.core.*;
+
+import tiled.core.AnimatedTile;
 import tiled.core.Map;
+import tiled.core.MapLayer;
+import tiled.core.MapObject;
+import tiled.core.ObjectGroup;
+import tiled.core.Tile;
+import tiled.core.TileLayer;
+import tiled.core.TileSet;
 import tiled.util.Base64;
 import tiled.util.BasicTileCutter;
 import tiled.util.ImageHelper;
@@ -409,6 +426,7 @@ public class TMXMapReader
         final int height = getAttribute(t, "height", 0);
 
         MapObject obj = new MapObject(x, y, width, height);
+        obj.setShape(obj.getBounds());
         if (name != null)
             obj.setName(name);
         if (type != null)
@@ -426,6 +444,17 @@ public class TMXMapReader
                     obj.setImageSource(source);
                 }
                 break;
+            } else if ("ellipse".equalsIgnoreCase(child.getNodeName())) {
+                obj.setShape(new Ellipse2D.Double(x, y, width, height));
+            } else if ("polygon".equalsIgnoreCase(child.getNodeName()) || "polyline".equalsIgnoreCase(child.getNodeName())) {
+                Polygon shape = new Polygon();
+                final String pointsAttribute = getAttributeValue(child, "points");
+                StringTokenizer st = new StringTokenizer(pointsAttribute, ", ");
+                while (st.hasMoreElements()) {
+                    shape.addPoint(x + Integer.parseInt(st.nextToken()), y + Integer.parseInt(st.nextToken()));
+                }
+                obj.setShape(shape);
+                obj.setBounds(shape.getBounds());
             }
         }
 
@@ -504,7 +533,6 @@ public class TMXMapReader
         for (int i = 0; i < children.getLength(); i++) {
             Node child = children.item(i);
             if ("image".equalsIgnoreCase(child.getNodeName())) {
-                int id = getAttribute(child, "id", -1);
                 Image img = unmarshalImage(child, baseDir);
                 tile.setImage(img);
             } else if ("animation".equalsIgnoreCase(child.getNodeName())) {
